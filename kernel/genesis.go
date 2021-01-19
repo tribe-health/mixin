@@ -85,7 +85,10 @@ func buildGenesisSnapshots(networkId crypto.Hash, epoch uint64, gns *Genesis) ([
 			RoundNumber: 0,
 			Timestamp:   epoch,
 		}
-		signed := tx.AsLatestVersion()
+		signed, err := tx.AsLatestVersion()
+		if err != nil {
+			return nil, nil, nil, err
+		}
 		if networkId.String() == config.MainnetId {
 			snapshot.Version = 0
 			signed, _ = common.UnmarshalVersionedTransaction(signed.Marshal())
@@ -110,7 +113,10 @@ func buildGenesisSnapshots(networkId crypto.Hash, epoch uint64, gns *Genesis) ([
 		err := fmt.Errorf("invalid genesis domain input account %s %s", domain.Signer.String(), in.Signer.String())
 		return nil, nil, nil, err
 	}
-	topo, signed := buildDomainSnapshot(networkId, epoch, domain.Signer, gns)
+	topo, signed, err := buildDomainSnapshot(networkId, epoch, domain.Signer, gns)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	snapshots = append(snapshots, topo)
 	transactions = append(transactions, signed)
 	snap := &topo.Snapshot
@@ -146,7 +152,7 @@ func buildGenesisSnapshots(networkId crypto.Hash, epoch uint64, gns *Genesis) ([
 	return rounds, snapshots, transactions, nil
 }
 
-func buildDomainSnapshot(networkId crypto.Hash, epoch uint64, domain common.Address, gns *Genesis) (*common.SnapshotWithTopologicalOrder, *common.VersionedTransaction) {
+func buildDomainSnapshot(networkId crypto.Hash, epoch uint64, domain common.Address, gns *Genesis) (*common.SnapshotWithTopologicalOrder, *common.VersionedTransaction, error) {
 	si := crypto.NewHash([]byte(domain.String() + "DOMAINACCEPT"))
 	seed := append(si[:], si[:]...)
 	script := common.NewThresholdScript(uint8(len(gns.Nodes)*2/3 + 1))
@@ -160,7 +166,10 @@ func buildDomainSnapshot(networkId crypto.Hash, epoch uint64, domain common.Addr
 	tx.Extra = make([]byte, len(domain.PublicSpendKey))
 	copy(tx.Extra, domain.PublicSpendKey[:])
 
-	signed := tx.AsLatestVersion()
+	signed, err := tx.AsLatestVersion()
+	if err != nil {
+		return nil, nil, err
+	}
 	if networkId.String() == config.MainnetId {
 		signed, _ = common.UnmarshalVersionedTransaction(signed.Marshal())
 	}
@@ -178,7 +187,7 @@ func buildDomainSnapshot(networkId crypto.Hash, epoch uint64, domain common.Addr
 	return &common.SnapshotWithTopologicalOrder{
 		Snapshot:         snapshot,
 		TopologicalOrder: uint64(len(gns.Nodes)),
-	}, signed
+	}, signed, nil
 }
 
 func readGenesis(path string) (*Genesis, error) {

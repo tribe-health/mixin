@@ -192,7 +192,11 @@ func decodeTransactionCmd(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	ver := transactionToMap(tx.AsLatestVersion())
+	versionTx, err := tx.AsLatestVersion()
+	if err != nil {
+		return err
+	}
+	ver := transactionToMap(versionTx)
 	data, err := json.MarshalIndent(ver, "", "  ")
 	if err != nil {
 		return err
@@ -268,7 +272,10 @@ func signTransactionCmd(c *cli.Context) error {
 		accounts = append(accounts, account)
 	}
 
-	signed := tx.AsLatestVersion()
+	signed, err := tx.AsLatestVersion()
+	if err != nil {
+		return err
+	}
 	for i := range signed.Inputs {
 		err := signed.SignInput(raw, i, accounts)
 		if err != nil {
@@ -330,14 +337,20 @@ func pledgeNodeCmd(c *cli.Context) error {
 	}
 	raw.Node = c.String("node")
 
-	amount := common.NewIntegerFromString(c.String("amount"))
+	amount, err := common.NewIntegerFromString(c.String("amount"))
+	if err != nil {
+		return err
+	}
 
 	tx := common.NewTransaction(common.XINAssetId)
 	tx.AddInput(input, 0)
 	tx.AddOutputWithType(common.OutputTypeNodePledge, nil, common.Script{}, amount, seed)
 	tx.Extra = append(signer.PublicSpendKey[:], payee.PublicSpendKey[:]...)
 
-	signed := tx.AsLatestVersion()
+	signed, err := tx.AsLatestVersion()
+	if err != nil {
+		return err
+	}
 	err = signed.SignInput(raw, 0, []common.Address{account})
 	if err != nil {
 		return err
@@ -425,7 +438,10 @@ func cancelNodeCmd(c *cli.Context) error {
 			Mask: source.Outputs[0].Mask,
 		},
 	}
-	signed := tx.AsLatestVersion()
+	signed, err := tx.AsLatestVersion()
+	if err != nil {
+		return err
+	}
 	err = signed.SignUTXO(utxo, []common.Address{account})
 	if err != nil {
 		return err

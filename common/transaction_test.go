@@ -26,7 +26,8 @@ func TestTransaction(t *testing.T) {
 	script := Script{OperatorCmp, OperatorSum, 2}
 	store := storeImpl{seed: seed, accounts: accounts}
 
-	ver := NewTransaction(XINAssetId).AsLatestVersion()
+	ver, err := NewTransaction(XINAssetId).AsLatestVersion()
+	assert.Nil(err)
 	assert.Equal("d2cf4d6e85d76512b29f173073be167423705e207f090f8cfc3e2b61fc32b6e2", ver.PayloadHash().String())
 	ver.AddInput(genesisHash, 0)
 	assert.Equal("b3afe7497740e05ba83e26977fbbfe7e1c2efc312d8d9aeb93bce43b9d8c6248", ver.PayloadHash().String())
@@ -43,7 +44,7 @@ func TestTransaction(t *testing.T) {
 	cm := ver.CompressMarshal()
 	assert.Equal(277, len(cm))
 	assert.Equal("0000000028b52ffd63c118533ce8001d0800c40ca99c2e0e2b1da4d648755ef19bd95139acbbe6564cfb06dec7cd34931ca72cdc921000024fe2a684e0e6c5e370ca0d89f5e2cb0da1e2ecd4028fa2d395fbca4e33f2580593c42082240709ab6152f66d2887c78f4f13d2a9fcea5aab7ac48e8099bcb8e107173ac420c06fa8fd6bc52ada96cef6ea8da9ed1cdfb9bafbb7b4e345c827f7ae64c2353fc420df02b12f33cc261928ede939cb146533730a0fc4e2cabbe973e4cf90bdadfb68c6473159e19ed185b373e935081774e0c133b9416abdff319667187a71dff53ec012fc75bb1394a785cc89cb470d24f85aedd083bc20068f76facb1fb825e9b432c19f5bf7a53b2c3bc0e7ce5e6fd9f8cbae17a5ec0e", hex.EncodeToString(cm))
-	ver, err := DecompressUnmarshalVersionedTransaction(cm)
+	ver, err = DecompressUnmarshalVersionedTransaction(cm)
 	assert.Nil(err)
 	pm = ver.Marshal()
 	assert.Equal(488, len(pm))

@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"github.com/MixinNetwork/mixin/config"
 	"github.com/MixinNetwork/mixin/crypto"
@@ -12,22 +13,22 @@ type VersionedTransaction struct {
 	BadGenesis *SignedGenesisHackTransaction
 }
 
-func (tx *SignedTransaction) AsLatestVersion() *VersionedTransaction {
+func (tx *SignedTransaction) AsLatestVersion() (*VersionedTransaction, error) {
 	if tx.Version != TxVersion {
-		panic(tx.Version)
+		return nil, fmt.Errorf("Invalid SignedTransaction version: %d", tx.Version)
 	}
 	return &VersionedTransaction{
 		SignedTransaction: *tx,
-	}
+	}, nil
 }
 
-func (tx *Transaction) AsLatestVersion() *VersionedTransaction {
+func (tx *Transaction) AsLatestVersion() (*VersionedTransaction, error) {
 	if tx.Version != TxVersion {
-		panic(tx.Version)
+		return nil, fmt.Errorf("Invalid Transaction version: %d", tx.Version)
 	}
 	return &VersionedTransaction{
 		SignedTransaction: SignedTransaction{Transaction: *tx},
-	}
+	}, nil
 }
 
 func DecompressUnmarshalVersionedTransaction(val []byte) (*VersionedTransaction, error) {

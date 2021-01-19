@@ -134,7 +134,7 @@ func (node *Node) buildNodeRemoveTransaction(nodeId crypto.Hash, timestamp uint6
 	seed := append(si[:], si[:]...)
 	tx.AddOutputWithType(common.OutputTypeNodeRemove, []common.Address{candi.Payee}, script, accept.Outputs[0].Amount, seed)
 
-	return tx.AsLatestVersion(), nil
+	return tx.AsLatestVersion()
 }
 
 func (node *Node) tryToSendRemoveTransaction() error {
@@ -251,7 +251,7 @@ func (chain *Chain) buildNodeAcceptTransaction(timestamp uint64, s *common.Snaps
 	tx.AddInput(ci.Transaction, 0)
 	tx.AddOutputWithType(common.OutputTypeNodeAccept, nil, common.Script{}, pledge.Outputs[0].Amount, []byte{})
 	tx.Extra = pledge.Extra
-	return tx.AsLatestVersion(), nil
+	return tx.AsLatestVersion()
 }
 
 func (chain *Chain) tryToSendAcceptTransaction() error {

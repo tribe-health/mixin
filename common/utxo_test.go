@@ -17,7 +17,8 @@ func TestUTXO(t *testing.T) {
 		accounts = append(accounts, randomAccount())
 	}
 
-	tx := NewTransaction(XINAssetId).AsLatestVersion()
+	tx, err := NewTransaction(XINAssetId).AsLatestVersion()
+	assert.Nil(err)
 	tx.AddInput(genesisHash, 0)
 	tx.AddInput(genesisHash, 1)
 	tx.AddRandomScriptOutput(accounts, script, NewInteger(20000))

@@ -161,7 +161,11 @@ func (tx *SignedTransaction) validateWithdrawalClaim(store DataStore, inputs map
 	if claim.Type != OutputTypeWithdrawalClaim {
 		return fmt.Errorf("invalid output type %d for withdrawal claim transaction", claim.Type)
 	}
-	if claim.Amount.Cmp(NewIntegerFromString(config.WithdrawalClaimFee)) < 0 {
+	fee, err := NewIntegerFromString(config.WithdrawalClaimFee)
+	if err != nil {
+		return err
+	}
+	if claim.Amount.Cmp(fee) < 0 {
 		return fmt.Errorf("invalid output amount %s for withdrawal claim transaction", claim.Amount)
 	}
 

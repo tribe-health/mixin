@@ -13,7 +13,7 @@ func TestInteger(t *testing.T) {
 	assert.Equal("0.00000000", NewInteger(0).String())
 
 	a := NewInteger(10000)
-	b := NewIntegerFromString("10000")
+	b, _ := NewIntegerFromString("10000")
 	assert.Equal(0, a.Cmp(b))
 
 	c := a.Add(b)
@@ -35,15 +35,15 @@ func TestInteger(t *testing.T) {
 	assert.Equal(0, c.Sub(a).Cmp(b))
 	assert.Equal(0, c.Sub(b).Cmp(a))
 
-	a = NewIntegerFromString("0.000000001")
+	a, _ = NewIntegerFromString("0.000000001")
 	assert.Equal("0.00000000", a.String())
-	a = NewIntegerFromString("10.000000001")
+	a, _ = NewIntegerFromString("10.000000001")
 	assert.Equal("10.00000000", a.String())
-	a = NewIntegerFromString("0.00000001")
+	a, _ = NewIntegerFromString("0.00000001")
 	assert.Equal("0.00000001", a.String())
-	a = NewIntegerFromString("10.00000001")
+	a, _ = NewIntegerFromString("10.00000001")
 	assert.Equal("10.00000001", a.String())
-	a = NewIntegerFromString("0.1")
+	a, _ = NewIntegerFromString("0.1")
 	assert.Equal("0.10000000", a.String())
 
 	m := NewInteger(500000)
@@ -66,7 +66,8 @@ func TestInteger(t *testing.T) {
 	assert.Equal("0.33333333", n.String())
 	n = n.Mul(3)
 	assert.Equal("0.99999999", n.String())
-	n = n.Add(NewIntegerFromString("0.00000001"))
+	t1, _ := NewIntegerFromString("0.00000001")
+	n = n.Add(t1)
 	assert.Equal("1.00000000", n.String())
 
 	m = NewInteger(8273)
@@ -77,7 +78,7 @@ func TestInteger(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal("8273.00000000", m.String())
 
-	m = NewIntegerFromString("0.00000192")
+	m, _ = NewIntegerFromString("0.00000192")
 	assert.Equal("0.00000192", m.String())
 	p = MsgpackMarshalPanic(m)
 	assert.Equal("d400c0", hex.EncodeToString(p))

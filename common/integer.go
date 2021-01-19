@@ -22,13 +22,14 @@ type Integer struct {
 	i big.Int
 }
 
-func NewIntegerFromString(x string) (v Integer) {
+func NewIntegerFromString(x string) (v Integer, err error) {
 	d, err := decimal.NewFromString(x)
 	if err != nil {
-		panic(err)
+		return
 	}
 	if d.Sign() <= 0 {
-		panic(x)
+		err = fmt.Errorf("Invalid x: %s", x)
+		return
 	}
 	s := d.Mul(decimal.New(1, Precision)).StringFixed(0)
 	v.i.SetString(s, 10)
@@ -120,7 +121,10 @@ func (x *Integer) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	i := NewIntegerFromString(unquoted)
+	i, err := NewIntegerFromString(unquoted)
+	if err != nil {
+		return err
+	}
 	x.i.SetBytes(i.i.Bytes())
 	return nil
 }

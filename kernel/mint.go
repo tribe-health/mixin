@@ -90,10 +90,10 @@ func pledgeAmount(sinceEpoch time.Duration) common.Integer {
 	return liquidity.Div(MintNodeMaximum)
 }
 
-func (node *Node) buildMintTransaction(timestamp uint64, validateOnly bool) *common.VersionedTransaction {
+func (node *Node) buildMintTransaction(timestamp uint64, validateOnly bool) (*common.VersionedTransaction, error) {
 	batch, amount := node.checkMintPossibility(timestamp, validateOnly)
 	if amount.Sign() <= 0 || batch <= 0 {
-		return nil
+		return nil, nil
 	}
 
 	nodes := node.sortMintNodes(timestamp)
@@ -123,12 +123,14 @@ func (node *Node) buildMintTransaction(timestamp uint64, validateOnly bool) *com
 }
 
 func (node *Node) tryToMintKernelNode() error {
-	signed := node.buildMintTransaction(node.GraphTimestamp, false)
-	if signed == nil {
+	signed, err := node.buildMintTransaction(node.GraphTimestamp, false)
+	if err != nil {
+		return err
+	} else if signed == nil {
 		return nil
 	}
 
-	err := signed.SignInput(node.persistStore, 0, []common.Address{node.Signer})
+	err = signed.SignInput(node.persistStore, 0, []common.Address{node.Signer})
 	if err != nil {
 		return err
 	}
@@ -153,8 +155,10 @@ func (node *Node) validateMintSnapshot(snap *common.Snapshot, tx *common.Version
 	if snap.Timestamp == 0 && snap.NodeId == node.IdForNetwork {
 		timestamp = uint64(clock.Now().UnixNano())
 	}
-	signed := node.buildMintTransaction(timestamp, true)
-	if signed == nil {
+	signed, err := node.buildMintTransaction(timestamp, true)
+	if err != nil {
+		return err
+	} else if signed == nil {
 		return fmt.Errorf("no mint available at %d", timestamp)
 	}
 

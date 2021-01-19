@@ -19,7 +19,9 @@ func TestMsgpack(t *testing.T) {
 	utxoIndex := 1
 	utxoAmount := "8293"
 
-	charge := NewIntegerFromString(utxoAmount).Sub(NewIntegerFromString(amount))
+	utxoAmount1, _ := NewIntegerFromString(utxoAmount)
+	amount1, _ := NewIntegerFromString(amount)
+	charge := utxoAmount1.Sub(amount1)
 	assert.Equal("8273.00000000", charge.String())
 	err := MsgpackUnmarshal(MsgpackMarshalPanic(charge), &charge)
 	assert.Nil(err)
@@ -41,7 +43,8 @@ func TestMsgpack(t *testing.T) {
 	hash, err := crypto.HashFromString(utxoHash)
 	assert.Nil(err)
 	tx.AddInput(hash, utxoIndex)
-	tx.AddRandomScriptOutput([]Address{receiver.Address()}, NewThresholdScript(1), NewIntegerFromString(amount))
+	amount2, _ := NewIntegerFromString(amount)
+	tx.AddRandomScriptOutput([]Address{receiver.Address()}, NewThresholdScript(1), amount2)
 	tx.AddRandomScriptOutput([]Address{sender.Address()}, NewThresholdScript(1), charge)
 	traceId, err := uuid.FromString("e3aa9cb9-4a28-11e9-81dd-f23c91a6e1fc")
 	assert.Nil(err)
