@@ -422,9 +422,19 @@ func cancelNodeCmd(c *cli.Context) error {
 		return fmt.Errorf("invalid source and receiver %s %s", pig.String(), receiver.PublicSpendKey)
 	}
 
+	if pledge.Outputs[0].Amount.Sign() < 0 {
+		return fmt.Errorf("invalid pledge outputs amount: %s", pledge.Outputs[0].Amount.String())
+	}
 	tx := common.NewTransaction(common.XINAssetId)
 	tx.AddInput(pledge.PayloadHash(), 0)
 	tx.AddOutputWithType(common.OutputTypeNodeCancel, nil, common.Script{}, pledge.Outputs[0].Amount.Div(100), seed)
+
+	if tx.Outputs[0].Amount.Sign() <= 0 {
+		return fmt.Errorf("invalid tx outputs amount: %s", tx.Outputs[0].Amount.String())
+	}
+	if pledge.Outputs[0].Amount.Cmp(tx.Outputs[0].Amount) < 0 {
+		return fmt.Errorf("invalid pledge amount: %s, tx amount: %s", pledge.Outputs[0].Amount.String(), tx.Outputs[0].Amount.String())
+	}
 	tx.AddScriptOutput([]common.Address{receiver}, common.NewThresholdScript(1), pledge.Outputs[0].Amount.Sub(tx.Outputs[0].Amount), seed)
 	tx.Extra = append(pledge.Extra, viewKey[:]...)
 	utxo := &common.UTXO{

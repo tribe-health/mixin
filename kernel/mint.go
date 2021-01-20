@@ -59,14 +59,17 @@ func (node *Node) PoolSize() (common.Integer, error) {
 	if err != nil {
 		return common.Zero, err
 	}
-	return poolSize(int(dist.Batch)), nil
+	return poolSize(int(dist.Batch))
 }
 
-func poolSize(batch int) common.Integer {
+func poolSize(batch int) (common.Integer, error) {
 	mint, pool := common.Zero, MintPool
 	for i := 0; i < batch/MintYearBatches; i++ {
 		year := pool.Div(MintYearShares)
 		mint = mint.Add(year.Div(10).Mul(9))
+		if pool.Cmp(year) < 0 {
+			return MintPool, fmt.Errorf("Invalid pool: %s, year: %s", pool.String(), year.String())
+		}
 		pool = pool.Sub(year)
 	}
 	day := pool.Div(MintYearShares).Div(MintYearBatches)
@@ -74,9 +77,12 @@ func poolSize(batch int) common.Integer {
 		mint = mint.Add(day.Div(10).Mul(9).Mul(count))
 	}
 	if mint.Sign() > 0 {
-		return MintPool.Sub(mint)
+		if MintPool.Cmp(mint) < 0 {
+			return MintPool, fmt.Errorf("Invalid MintPool: %s, mint: %s", MintPool.String(), mint.String())
+		}
+		return MintPool.Sub(mint), nil
 	}
-	return MintPool
+	return MintPool, nil
 }
 
 func pledgeAmount(sinceEpoch time.Duration) common.Integer {
@@ -91,12 +97,15 @@ func pledgeAmount(sinceEpoch time.Duration) common.Integer {
 }
 
 func (node *Node) buildMintTransaction(timestamp uint64, validateOnly bool) (*common.VersionedTransaction, error) {
-	batch, amount := node.checkMintPossibility(timestamp, validateOnly)
-	if amount.Sign() <= 0 || batch <= 0 {
-		return nil, nil
+	batch, amount, err := node.checkMintPossibility(timestamp, validateOnly)
+	if amount.Sign() <= 0 || batch <= 0 || err != nil {
+		return nil, err
 	}
 
 	nodes := node.sortMintNodes(timestamp)
+	if len(nodes) <= 0 {
+		return nil, fmt.Errorf("Invalid nodes size: %d", len(nodes))
+	}
 	per := amount.Div(len(nodes))
 	diff := amount.Sub(per.Mul(len(nodes)))
 
@@ -170,16 +179,16 @@ func (node *Node) validateMintSnapshot(snap *common.Snapshot, tx *common.Version
 	return nil
 }
 
-func (node *Node) checkMintPossibility(timestamp uint64, validateOnly bool) (int, common.Integer) {
+func (node *Node) checkMintPossibility(timestamp uint64, validateOnly bool) (int, common.Integer, error) {
 	if timestamp <= node.Epoch {
-		return 0, common.Zero
+		return 0, common.Zero, nil
 	}
 
 	since := timestamp - node.Epoch
 	hours := int(since / 3600000000000)
 	batch := hours / 24
 	if batch < 1 {
-		return 0, common.Zero
+		return 0, common.Zero, nil
 	}
 	kmb, kme := config.KernelMintTimeBegin, config.KernelMintTimeEnd
 	if node.networkId.String() == config.MainnetId && batch < MainnetMintPeriodForkBatch {
@@ -187,12 +196,15 @@ func (node *Node) checkMintPossibility(timestamp uint64, validateOnly bool) (int
 		kme = MainnetMintPeriodForkTimeEnd
 	}
 	if hours%24 < kmb || hours%24 > kme {
-		return 0, common.Zero
+		return 0, common.Zero, nil
 	}
 
 	pool := MintPool
 	for i := 0; i < batch/MintYearBatches; i++ {
 		pool = pool.Sub(pool.Div(MintYearShares))
+	}
+	if pool.Sign() < 0 {
+		return 0, common.Zero, fmt.Errorf("Invalid pool: %s", pool.String())
 	}
 	pool = pool.Div(MintYearShares)
 	total := pool.Div(MintYearBatches)
@@ -202,23 +214,26 @@ func (node *Node) checkMintPossibility(timestamp uint64, validateOnly bool) (int
 	dist, err := node.persistStore.ReadLastMintDistribution(common.MintGroupKernelNode)
 	if err != nil {
 		logger.Verbosef("ReadLastMintDistribution ERROR %s\n", err)
-		return 0, common.Zero
+		return 0, common.Zero, nil
 	}
 	logger.Verbosef("checkMintPossibility OLD %s %s %s %s %d %s %d\n", pool, total, light, full, batch, dist.Amount, dist.Batch)
 
 	if batch < int(dist.Batch) {
-		return 0, common.Zero
+		return 0, common.Zero, nil
 	}
 	if batch == int(dist.Batch) {
 		if validateOnly {
-			return batch, dist.Amount
+			return batch, dist.Amount, nil
 		}
-		return 0, common.Zero
+		return 0, common.Zero, nil
 	}
 
+	if batch-int(dist.Batch) <= 0 {
+		return 0, common.Zero, fmt.Errorf("Invalid batch: %d, dist.Batch: %d", batch, int(dist.Batch))
+	}
 	amount := full.Mul(batch - int(dist.Batch))
 	logger.Verbosef("checkMintPossibility NEW %s %s %s %s %s %d %s %d\n", pool, total, light, full, amount, batch, dist.Amount, dist.Batch)
-	return batch, amount
+	return batch, amount, nil
 }
 
 func (node *Node) sortMintNodes(timestamp uint64) []*CNode {

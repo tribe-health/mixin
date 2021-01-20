@@ -124,6 +124,9 @@ func (tx *Transaction) validateNodeCancel(store DataStore, msg []byte, sigs [][]
 	if po.Type != OutputTypeNodePledge {
 		return fmt.Errorf("invalid pledge utxo type %d", po.Type)
 	}
+	if po.Amount.Sign() < 0 {
+		return fmt.Errorf("invalid pledge utxo amount %s", po.Amount.String())
+	}
 	if cancel.Amount.Cmp(po.Amount.Div(100)) != 0 {
 		return fmt.Errorf("invalid script output amount %s for cancel transaction", cancel.Amount)
 	}

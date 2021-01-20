@@ -44,43 +44,21 @@ func NewInteger(x uint64) (v Integer) {
 }
 
 func (x Integer) Add(y Integer) (v Integer) {
-	if x.Sign() < 0 || y.Sign() <= 0 {
-		panic(fmt.Sprint(x, y))
-	}
-
 	v.i.Add(&x.i, &y.i)
-	if v.Cmp(x) < 0 || v.Cmp(y) < 0 {
-		panic(fmt.Sprint(x, y))
-	}
 	return
 }
 
 func (x Integer) Sub(y Integer) (v Integer) {
-	if x.Sign() < 0 || y.Sign() <= 0 {
-		panic(fmt.Sprint(x, y))
-	}
-	if x.Cmp(y) < 0 {
-		panic(fmt.Sprint(x, y))
-	}
-
 	v.i.Sub(&x.i, &y.i)
 	return
 }
 
 func (x Integer) Mul(y int) (v Integer) {
-	if x.Sign() < 0 || y <= 0 {
-		panic(fmt.Sprint(x, y))
-	}
-
 	v.i.Mul(&x.i, big.NewInt(int64(y)))
 	return
 }
 
 func (x Integer) Div(y int) (v Integer) {
-	if x.Sign() < 0 || y <= 0 {
-		panic(fmt.Sprint(x, y))
-	}
-
 	v.i.Div(&x.i, big.NewInt(int64(y)))
 	return
 }
