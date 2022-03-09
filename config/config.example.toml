@@ -59,6 +59,7 @@ peers = [
   "mixin-node-01.b.watch:7239",
   "mixin-node-02.b.watch:7239",
   "mixin-node-03.b.watch:7239",
+  "mixin-node-04.b.watch:7239",
   "lehigh.hotot.org:7239",
   "lehigh-2.hotot.org:7239",
 ]
